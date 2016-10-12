@@ -3,9 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:id="@+id/list_item_forecast_textview"
-    android:text="toby-sunny-88/23"
     android:gravity="center_vertical"
-    android:textSize="30dp"
+    android:minHeight="?android:attr/listPreferredItemHeight"
     >
 
 </TextView>
+

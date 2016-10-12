@@ -9,4 +9,10 @@ tools:context=".MainActivity">
         android:orderInCategory="100"
         app:showAsAction="never"
         />
+
+    <item android:id="@+id/action_map"
+        android:title="Map Location"
+        app:showAsAction="never" />
+
+
 </menu>
