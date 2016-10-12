@@ -1,2 +1,2 @@
 # Sunshine
-Sunshine android application to expectation the weather 
+Sunshine app  is android application to predict the  weather 
