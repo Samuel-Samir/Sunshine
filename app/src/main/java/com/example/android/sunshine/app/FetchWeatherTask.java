@@ -1,4 +1,18 @@
-
+/*
+ * Copyright (C) 2014 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.example.android.sunshine.app;
 
 import android.content.ContentUris;
@@ -46,9 +60,7 @@ public class FetchWeatherTask extends AsyncTask<String, Void, Void> {
      * @param lon the longitude of the city
      * @return the row ID of the added location.
      */
-    long addLocation(String locationSetting, String cityName, double lat, double lon)
-    {
-
+    long addLocation(String locationSetting, String cityName, double lat, double lon) {
         long locationId;
 
         // First, check if the location with this city name exists in the db
@@ -89,14 +101,33 @@ public class FetchWeatherTask extends AsyncTask<String, Void, Void> {
         return locationId;
     }
 
+    /**
+     * Take the String representing the complete forecast in JSON Format and
+     * pull out the data we need to construct the Strings needed for the wireframes.
+     *
+     * Fortunately parsing is easy:  constructor takes the JSON string and converts it
+     * into an Object hierarchy for us.
+     */
+    private void getWeatherDataFromJson(String forecastJsonStr,
+                                            String locationSetting)
+            throws JSONException {
 
-    private void getWeatherDataFromJson(String forecastJsonStr, String locationSetting) throws JSONException {
+        // Now we have a String representing the complete forecast in JSON Format.
+        // Fortunately parsing is easy:  constructor takes the JSON string and converts it
+        // into an Object hierarchy for us.
+
+        // These are the names of the JSON objects that need to be extracted.
+
+        // Location information
         final String OWM_CITY = "city";
         final String OWM_CITY_NAME = "name";
         final String OWM_COORD = "coord";
 
+        // Location coordinate
         final String OWM_LATITUDE = "lat";
         final String OWM_LONGITUDE = "lon";
+
+        // Weather information.  Each day's forecast info is an element of the "list" array.
         final String OWM_LIST = "list";
 
         final String OWM_PRESSURE = "pressure";
@@ -104,6 +135,7 @@ public class FetchWeatherTask extends AsyncTask<String, Void, Void> {
         final String OWM_WINDSPEED = "speed";
         final String OWM_WIND_DIRECTION = "deg";
 
+        // All temperatures are children of the "temp" object.
         final String OWM_TEMPERATURE = "temp";
         final String OWM_MAX = "max";
         final String OWM_MIN = "min";
@@ -124,13 +156,25 @@ public class FetchWeatherTask extends AsyncTask<String, Void, Void> {
             double cityLongitude = cityCoord.getDouble(OWM_LONGITUDE);
 
             long locationId = addLocation(locationSetting, cityName, cityLatitude, cityLongitude);
+
+            // Insert the new weather information into the database
             Vector<ContentValues> cVVector = new Vector<ContentValues>(weatherArray.length());
+
+            // OWM returns daily forecasts based upon the local time of the city that is being
+            // asked for, which means that we need to know the GMT offset to translate this data
+            // properly.
+
+            // Since this data is also sent in-order and the first day is always the
+            // current day, we're going to take advantage of that to get a nice
+            // normalized UTC date for all of our weather.
 
             Time dayTime = new Time();
             dayTime.setToNow();
 
+            // we start at the day returned by local time. Otherwise this is a mess.
             int julianStartDay = Time.getJulianDay(System.currentTimeMillis(), dayTime.gmtoff);
 
+            // now we work exclusively in UTC
             dayTime = new Time();
 
             for(int i = 0; i < weatherArray.length(); i++) {
@@ -146,7 +190,11 @@ public class FetchWeatherTask extends AsyncTask<String, Void, Void> {
 
                 String description;
                 int weatherId;
+
+                // Get the JSON object representing the day
                 JSONObject dayForecast = weatherArray.getJSONObject(i);
+
+                // Cheating to convert this to UTC time, which is what we want anyhow
                 dateTime = dayTime.setJulianDay(julianStartDay+i);
 
                 pressure = dayForecast.getDouble(OWM_PRESSURE);
@@ -154,12 +202,15 @@ public class FetchWeatherTask extends AsyncTask<String, Void, Void> {
                 windSpeed = dayForecast.getDouble(OWM_WINDSPEED);
                 windDirection = dayForecast.getDouble(OWM_WIND_DIRECTION);
 
+                // Description is in a child array called "weather", which is 1 element long.
+                // That element also contains a weather code.
                 JSONObject weatherObject =
                         dayForecast.getJSONArray(OWM_WEATHER).getJSONObject(0);
                 description = weatherObject.getString(OWM_DESCRIPTION);
                 weatherId = weatherObject.getInt(OWM_WEATHER_ID);
 
-
+                // Temperatures are in a child object called "temp".  Try not to name variables
+                // "temp" when working with temperature.  It confuses everybody.
                 JSONObject temperatureObject = dayForecast.getJSONObject(OWM_TEMPERATURE);
                 high = temperatureObject.getDouble(OWM_MAX);
                 low = temperatureObject.getDouble(OWM_MIN);
@@ -196,33 +247,39 @@ public class FetchWeatherTask extends AsyncTask<String, Void, Void> {
         }
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    String dadada ()
-    {
-        String v = "{\"city\":{\"id\":5375480,\"name\":\"Mountain View\",\"coord\":{\"lon\":-122.083847,\"lat\":37.386051},\"country\":\"US\",\"population\":0},\"cod\":\"200\",\"message\":0.0089,\"cnt\":14,\"list\":[{\"dt\":1476558000,\"temp\":{\"day\":13.86,\"min\":13.86,\"max\":13.86,\"night\":13.86,\"eve\":13.86,\"morn\":13.86},\"pressure\":986.19,\"humidity\":97,\"weather\":[{\"id\":500,\"main\":\"Rain\",\"description\":\"light rain\",\"icon\":\"10d\"}],\"speed\":1.06,\"deg\":166,\"clouds\":92,\"rain\":1.08},{\"dt\":1476644400,\"temp\":{\"day\":15.88,\"min\":13.86,\"max\":16.32,\"night\":15.19,\"eve\":15.93,\"morn\":13.86},\"pressure\":985.38,\"humidity\":100,\"weather\":[{\"id\":502,\"main\":\"Rain\",\"description\":\"heavy intensity rain\",\"icon\":\"10d\"}],\"speed\":2.71,\"deg\":199,\"clouds\":92,\"rain\":27.22},{\"dt\":1476730800,\"temp\":{\"day\":15.95,\"min\":10.23,\"max\":17.44,\"night\":10.23,\"eve\":17.1,\"morn\":13.94},\"pressure\":993.97,\"humidity\":92,\"weather\":[{\"id\":500,\"main\":\"Rain\",\"description\":\"light rain\",\"icon\":\"10d\"}],\"speed\":1.52,\"deg\":274,\"clouds\":48,\"rain\":0.31},{\"dt\":1476817200,\"temp\":{\"day\":15.12,\"min\":11.76,\"max\":16.94,\"night\":12.95,\"eve\":16.94,\"morn\":11.76},\"pressure\":1015.13,\"humidity\":0,\"weather\":[{\"id\":500,\"main\":\"Rain\",\"description\":\"light rain\",\"icon\":\"10d\"}],\"speed\":2.1,\"deg\":10,\"clouds\":33},{\"dt\":1476903600,\"temp\":{\"day\":16.21,\"min\":11.39,\"max\":18.28,\"night\":12.29,\"eve\":18.28,\"morn\":11.39},\"pressure\":1014.77,\"humidity\":0,\"weather\":[{\"id\":800,\"main\":\"Clear\",\"description\":\"clear sky\",\"icon\":\"01d\"}],\"speed\":2.83,\"deg\":341,\"clouds\":0},{\"dt\":1476990000,\"temp\":{\"day\":18.01,\"min\":11.42,\"max\":20.7,\"night\":13.28,\"eve\":20.7,\"morn\":11.42},\"pressure\":1012.42,\"humidity\":0,\"weather\":[{\"id\":800,\"main\":\"Clear\",\"description\":\"clear sky\",\"icon\":\"01d\"}],\"speed\":2.09,\"deg\":4,\"clouds\":0},{\"dt\":1477076400,\"temp\":{\"day\":18.16,\"min\":11.19,\"max\":19.76,\"night\":13.22,\"eve\":19.76,\"morn\":11.19},\"pressure\":1010.84,\"humidity\":0,\"weather\":[{\"id\":800,\"main\":\"Clear\",\"description\":\"clear sky\",\"icon\":\"01d\"}],\"speed\":1.72,\"deg\":324,\"clouds\":4},{\"dt\":1477162800,\"temp\":{\"day\":17.63,\"min\":11.62,\"max\":19.2,\"night\":12.49,\"eve\":19.2,\"morn\":11.62},\"pressure\":1008.32,\"humidity\":0,\"weather\":[{\"id\":800,\"main\":\"Clear\",\"description\":\"clear sky\",\"icon\":\"01d\"}],\"speed\":1.38,\"deg\":342,\"clouds\":47},{\"dt\":1477249200,\"temp\":{\"day\":14.77,\"min\":10.06,\"max\":15.96,\"night\":12.23,\"eve\":15.96,\"morn\":10.06},\"pressure\":1011.05,\"humidity\":0,\"weather\":[{\"id\":500,\"main\":\"Rain\",\"description\":\"light rain\",\"icon\":\"10d\"}],\"speed\":2.97,\"deg\":301,\"clouds\":49,\"rain\":0.55},{\"dt\":1477335600,\"temp\":{\"day\":13.76,\"min\":10.58,\"max\":16.67,\"night\":10.58,\"eve\":16.67,\"morn\":11.19},\"pressure\":1010.57,\"humidity\":0,\"weather\":[{\"id\":500,\"main\":\"Rain\",\"description\":\"light rain\",\"icon\":\"10d\"}],\"speed\":1.67,\"deg\":328,\"clouds\":33,\"rain\":0.22},{\"dt\":1477422000,\"temp\":{\"day\":14.58,\"min\":9.21,\"max\":15.82,\"night\":12.54,\"eve\":15.82,\"morn\":9.21},\"pressure\":1011.52,\"humidity\":0,\"weather\":[{\"id\":500,\"main\":\"Rain\",\"description\":\"light rain\",\"icon\":\"10d\"}],\"speed\":1.52,\"deg\":301,\"clouds\":35,\"rain\":1.96},{\"dt\":1477508400,\"temp\":{\"day\":14.5,\"min\":12.58,\"max\":16.09,\"night\":12.58,\"eve\":16.09,\"morn\":12.9},\"pressure\":1011.94,\"humidity\":0,\"weather\":[{\"id\":501,\"main\":\"Rain\",\"description\":\"moderate rain\",\"icon\":\"10d\"}],\"speed\":2.62,\"deg\":161,\"clouds\":97,\"rain\":8.59},{\"dt\":1477594800,\"temp\":{\"day\":15.74,\"min\":12.04,\"max\":17.44,\"night\":12.85,\"eve\":17.44,\"morn\":12.04},\"pressure\":1012.12,\"humidity\":0,\"weather\":[{\"id\":500,\"main\":\"Rain\",\"description\":\"light rain\",\"icon\":\"10d\"}],\"speed\":1.36,\"deg\":113,\"clouds\":66},{\"dt\":1477681200,\"temp\":{\"day\":15.81,\"min\":11.43,\"max\":18.08,\"night\":12.25,\"eve\":18.08,\"morn\":11.43},\"pressure\":1012.15,\"humidity\":0,\"weather\":[{\"id\":500,\"main\":\"Rain\",\"description\":\"light rain\",\"icon\":\"10d\"}],\"speed\":1.14,\"deg\":1,\"clouds\":22}]}";
-        return  v ;
-    }
     @Override
     protected Void doInBackground(String... params) {
 
+        // If there's no zip code, there's nothing to look up.  Verify size of params.
         if (params.length == 0) {
             return null;
         }
         String locationQuery = params[0];
+
+        // These two need to be declared outside the try/catch
+        // so that they can be closed in the finally block.
         HttpURLConnection urlConnection = null;
         BufferedReader reader = null;
+
+        // Will contain the raw JSON response as a string.
         String forecastJsonStr = null;
+
         String format = "json";
         String units = "metric";
         int numDays = 14;
-        try {
 
-            final String FORECAST_BASE_URL ="http://api.openweathermap.org/data/2.5/forecast/daily?";
+        try {
+            // Construct the URL for the OpenWeatherMap query
+            // Possible parameters are avaiable at OWM's forecast API page, at
+            // http://openweathermap.org/API#forecast
+            final String FORECAST_BASE_URL =
+                    "http://api.openweathermap.org/data/2.5/forecast/daily?";
             final String QUERY_PARAM = "q";
             final String FORMAT_PARAM = "mode";
             final String UNITS_PARAM = "units";
             final String DAYS_PARAM = "cnt";
             final String APPID_PARAM = "APPID";
+
             Uri builtUri = Uri.parse(FORECAST_BASE_URL).buildUpon()
                     .appendQueryParameter(QUERY_PARAM, params[0])
                     .appendQueryParameter(FORMAT_PARAM, format)
@@ -233,21 +290,25 @@ public class FetchWeatherTask extends AsyncTask<String, Void, Void> {
 
             URL url = new URL(builtUri.toString());
 
+            // Create the request to OpenWeatherMap, and open the connection
             urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setRequestMethod("GET");
             urlConnection.connect();
 
+            // Read the input stream into a String
             InputStream inputStream = urlConnection.getInputStream();
             StringBuffer buffer = new StringBuffer();
             if (inputStream == null) {
+                // Nothing to do.
                 return null;
             }
             reader = new BufferedReader(new InputStreamReader(inputStream));
 
-            String line ;
-            line  = dadada();
+            String line;
             while ((line = reader.readLine()) != null) {
-
+                // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                // But it does make debugging a *lot* easier if you print out the completed
+                // buffer for debugging.
                 buffer.append(line + "\n");
             }
 
@@ -259,6 +320,8 @@ public class FetchWeatherTask extends AsyncTask<String, Void, Void> {
             getWeatherDataFromJson(forecastJsonStr, locationQuery);
         } catch (IOException e) {
             Log.e(LOG_TAG, "Error ", e);
+            // If the code didn't successfully get the weather data, there's no point in attempting
+            // to parse it.
         } catch (JSONException e) {
             Log.e(LOG_TAG, e.getMessage(), e);
             e.printStackTrace();
@@ -276,8 +339,4 @@ public class FetchWeatherTask extends AsyncTask<String, Void, Void> {
         }
         return null;
     }
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
 }
