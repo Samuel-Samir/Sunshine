@@ -1,18 +1,4 @@
-/*
- * Copyright (C) 2014 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 package com.example.android.sunshine.app;
 
 import android.content.Context;
@@ -53,18 +39,10 @@ public class Utility {
         return DateFormat.getDateInstance().format(date);
     }
 
-    // Format used for storing dates in the database.  ALso used for converting those strings
-    // back into date objects for comparison/processing.
+
     public static final String DATE_FORMAT = "yyyyMMdd";
 
-    /**
-     * Helper method to convert the database representation of the date into something to display
-     * to users.  As classy and polished a user experience as "20140102" is, we can do better.
-     *
-     * @param context Context to use for resource localization
-     * @param dateInMillis The date in milliseconds
-     * @return a user-friendly representation of the date.
-     */
+
     public static String getFriendlyDayString(Context context, long dateInMillis) {
         // The day string for forecast uses the following logic:
         // For today: "Today, June 8"
@@ -97,14 +75,7 @@ public class Utility {
         }
     }
 
-    /**
-     * Given a day, returns just the name to use for that day.
-     * E.g "today", "tomorrow", "wednesday".
-     *
-     * @param context Context to use for resource localization
-     * @param dateInMillis The date in milliseconds
-     * @return
-     */
+
     public static String getDayName(Context context, long dateInMillis) {
         // If the date is today, return the localized version of "Today" instead of the actual
         // day name.
@@ -126,13 +97,7 @@ public class Utility {
         }
     }
 
-    /**
-     * Converts db date format to the format "Month day", e.g "June 24".
-     * @param context Context to use for resource localization
-     * @param dateInMillis The db formatted date string, expected to be of the form specified
-     *                in Utility.DATE_FORMAT
-     * @return The day in the form of a string formatted "December 6"
-     */
+
     public static String getFormattedMonthDay(Context context, long dateInMillis ) {
         Time time = new Time();
         time.setToNow();
@@ -151,9 +116,6 @@ public class Utility {
             windSpeed = .621371192237334f * windSpeed;
         }
 
-        // From wind direction in degrees, determine compass direction as a string (e.g NW)
-        // You know what's fun, writing really long if/else statements with tons of possible
-        // conditions.  Seriously, try it!
         String direction = "Unknown";
         if (degrees >= 337.5 || degrees < 22.5) {
             direction = "N";
